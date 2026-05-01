@@ -1,0 +1,142 @@
+/* --------------------------
+   Sección 1: Código de Usuario
+   -------------------------- */
+package compiladorjava.analizadores;
+
+import java_cup.runtime.*;
+
+parser code {:
+    public void syntax_error(Symbol s) {
+        System.err.println("Error Sintáctico en la Línea " + (s.left) + 
+                           " Columna " + s.right + ". No se esperaba este componente: " + s.value);
+    }
+
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception {
+        System.err.println("Error Sintáctico Irrecuperable en la Línea " + 
+                           (s.left)+ " Columna "+s.right + ". Componente " + s.value + " no reconocido.");
+    }
+:}
+
+/* --------------------------
+   Sección 2: Terminales
+   -------------------------- */
+terminal PUBLIC, PRIVATE, CLASS, IF, ELSE, WHILE, RETURN;
+terminal INT, BOOLEAN, VOID;
+terminal Boolean TRUE, FALSE;
+terminal SUMA, RESTA, MULTIPLICACION, DIVISION, ASIGNACION;
+terminal IGUAL_QUE, MENOR_QUE, MAYOR_QUE;
+terminal PUNTO_COMA, COMA, LLAVE_A, LLAVE_C, PARENTESIS_A, PARENTESIS_C;
+
+terminal Integer LITERAL_ENTERO;
+terminal Double  LITERAL_FLOTANTE;
+terminal String  LITERAL_STRING;
+terminal String  ID;
+
+/* --------------------------
+   Sección 3: No Terminales
+   -------------------------- */
+non terminal programa, clase, modificador_opt;
+non terminal lista_miembros, miembro;
+non terminal declaracion_var, declaracion_metodo;
+non terminal tipo, bloque, lista_sentencias, sentencia;
+non terminal asignacion_stmt, if_stmt, while_stmt, return_stmt, expr_stmt;
+non terminal expresion;
+non terminal lista_parametros_opt, lista_parametros, parametro;
+
+/* --------------------------
+   Sección 4: Precedencia
+   -------------------------- */
+precedence left IGUAL_QUE, MENOR_QUE, MAYOR_QUE;
+precedence left SUMA, RESTA;
+precedence left MULTIPLICACION, DIVISION;
+
+/* --------------------------
+   Sección 5: Gramática
+   -------------------------- */
+start with programa;
+
+programa ::= clase 
+           | programa clase 
+           ;
+
+clase ::= modificador_opt CLASS ID LLAVE_A lista_miembros LLAVE_C ;
+
+modificador_opt ::= PUBLIC 
+                  | PRIVATE 
+                  | /* vacio */ 
+                  ;
+
+lista_miembros ::= lista_miembros miembro 
+                 | /* vacio */ 
+                 ;
+
+miembro ::= declaracion_var 
+          | declaracion_metodo 
+          ;
+
+tipo ::= INT 
+       | BOOLEAN 
+       | VOID 
+       ;
+
+/* Parámetros de Métodos */
+lista_parametros_opt ::= lista_parametros 
+                       | /* vacio */ 
+                       ;
+
+lista_parametros ::= lista_parametros COMA parametro 
+                   | parametro 
+                   ;
+
+parametro ::= tipo ID ;
+
+declaracion_var ::= modificador_opt tipo ID ASIGNACION expresion PUNTO_COMA 
+                  | modificador_opt tipo ID PUNTO_COMA 
+                  ;
+
+/* Método ahora acepta parámetros separados por coma */
+declaracion_metodo ::= modificador_opt tipo ID PARENTESIS_A lista_parametros_opt PARENTESIS_C bloque ;
+
+bloque ::= LLAVE_A lista_sentencias LLAVE_C ;
+
+lista_sentencias ::= lista_sentencias sentencia 
+                   | /* vacio */ 
+                   ;
+
+sentencia ::= declaracion_var 
+            | asignacion_stmt 
+            | if_stmt 
+            | while_stmt 
+            | return_stmt
+            | expr_stmt
+            | bloque 
+            ;
+
+asignacion_stmt ::= ID ASIGNACION expresion PUNTO_COMA ;
+
+/* Soporte para "return resultado;" y "resultado;" */
+return_stmt ::= RETURN expresion PUNTO_COMA 
+              | RETURN PUNTO_COMA ;
+expr_stmt   ::= expresion PUNTO_COMA ;
+
+if_stmt ::= IF PARENTESIS_A expresion PARENTESIS_C bloque 
+          | IF PARENTESIS_A expresion PARENTESIS_C bloque ELSE bloque 
+          ;
+
+while_stmt ::= WHILE PARENTESIS_A expresion PARENTESIS_C bloque ;
+
+expresion ::= LITERAL_ENTERO 
+            | LITERAL_FLOTANTE 
+            | LITERAL_STRING 
+            | TRUE 
+            | FALSE 
+            | ID 
+            | expresion SUMA expresion 
+            | expresion RESTA expresion 
+            | expresion MULTIPLICACION expresion 
+            | expresion DIVISION expresion 
+            | expresion IGUAL_QUE expresion 
+            | expresion MENOR_QUE expresion 
+            | expresion MAYOR_QUE expresion 
+            | PARENTESIS_A expresion PARENTESIS_C 
+            ;
